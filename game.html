@@ -1,0 +1,171 @@
+
+<head>
+    <title>Mini game</title>
+    <style>
+    
+        canvas  {
+            padding-left: 0;
+            padding-right: 0;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            border: 2px solid black;
+            background-color: lightblue;
+        }
+
+    </style>
+</head>
+
+<body style="text-align:center;">
+
+    <div id="canvas"></div>
+    
+    <body onload="startGame()">
+    <h1>Multiplication fighter</h1>
+    <input type="text" id="answerText" autofocus="autofocus" placeholder="..." onkeydown="checkAnswer(this)">
+    <p id="scoreIsWrittenHere">0 punten</p>
+    <p id="healthScoreIsWrittenHere">10 levens</p>
+    <p id="levelIsWrittenHere" >Level 1</p>
+
+
+    <script>    // Javascript starts here...
+
+    let canvaswidth = 800;
+    let canvasheight = 400;
+    let lineheight = 40;        // the text is 30px...
+    let numberOfLinesOnScreen = canvasheight/lineheight;
+
+    var exercise_position = 10;
+    var healthScore = 10;       // when you make an error, health decreases. When it's 0... you're dead.
+    var score = 0;              // when you solve an exercise, add 10 points
+    var level = 1;              // when you get more points, your level increases... but the speed also!
+    var howManySecondsOnScreen = 5; // How many seconds should the exercise remain on the screen
+    var speed = 0.25;            // the speed with which the exercises go over the screen, is the width of the screen
+    var timecounter = 100;
+    var howFastSpawnANewExercise = 200;
+    var y_position = 30;
+
+    const tableOfFour = [];     // I'm declaring the Table Of Four completely explicit. For the other tables I will have to code a quicker way.... or not :)
+    tableOfFour[0] = new Exercise("0 x 4 = ","0");
+    tableOfFour[1] = new Exercise("1 x 4 = ","4");
+    tableOfFour[2] = new Exercise("2 x 4 = ","8");
+    tableOfFour[3] = new Exercise("3 x 4 = ","12");
+    tableOfFour[4] = new Exercise("4 x 4 = ","16");
+    tableOfFour[5] = new Exercise("5 x 4 = ","20");
+    tableOfFour[6] = new Exercise("6 x 4 = ","24");
+    tableOfFour[7] = new Exercise("7 x 4 = ","28");
+    tableOfFour[8] = new Exercise("8 x 4 = ","32");
+    tableOfFour[9] = new Exercise("9 x 4 = ","36");
+    tableOfFour[10] = new Exercise("10 x 4 = ","40");
+
+    const exercisesOnScreen = [];     // This is an array, will be filled up with exercises that are shown on the screen
+
+
+    function startGame() {
+        gameCanvas.start();
+    }
+
+    var gameCanvas = {
+        canvas: document.createElement("canvas"),
+        start: function() {
+            this.canvas.width = canvaswidth;
+            this.canvas.height = canvasheight;
+            this.context = this.canvas.getContext("2d");
+            document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+            this.interval = setInterval(updateGameArea, 20);    // Refresh rate: every 20 ms, so 50 times per second
+        },
+        clear : function() {
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        }
+    }
+
+    function Exercise(question, answer){
+        this.question = question;
+        this.answer = answer;
+        this.x = 10;
+        this.y = 0;
+    }
+
+    function checkAnswer(theTextWrittenInTheBox) {
+        var answerSubmitted = document.getElementById("answerText").value;
+        if( event.keyCode == 13 ) { // if enter is pressed
+            let correctAnswerNumber = null;
+
+            for (let i = exercisesOnScreen.length - 1; i >= 0; i--){    // loop backwards through the array, ensuring that if there are multiple exercises with the same answer, the first one gets tagged as correct
+                if(answerSubmitted == exercisesOnScreen[i].answer){         // if the answer is correct                        
+                    correctAnswerNumber = i;                                // we memorize which is the right answer 
+                }
+            }
+
+            if(correctAnswerNumber != null){            // so if the answer is correct
+                exercisesOnScreen.splice(correctAnswerNumber,1);      // we remove it from the array
+                score = score + 10;                     // and you get 10 points!
+                document.getElementById("scoreIsWrittenHere").innerHTML = score + " punten";
+                
+                if(exercisesOnScreen.length == 0){  // if no more exercise on the screen: spawn a new one. Reset the timer for the next one also.
+                    timecounter = 0;
+                    spawnNewExercise();
+                }
+
+                if(score > 100){
+                    level = 2;
+                    document.getElementById("levelIsWrittenHere").innerHTML = "Level " + level;    
+                }
+
+            }else{                                      // but if you made a mistake...
+                healthScore = healthScore - 1;          // you lose a health point
+                document.getElementById("healthScoreIsWrittenHere").innerHTML = healthScore + " levens";
+            }
+            document.getElementById("answerText").value = null; // clearing the text in the input field is the last thing to do      
+        }
+    }
+
+    function showExercise() {
+        ctx = gameCanvas.context;
+        ctx.fillStyle = "blue";
+        ctx.font = "30px Arial";
+        for(let i=0; i<exercisesOnScreen.length;i++){
+            ctx.fillText(exercisesOnScreen[i].question, exercisesOnScreen[i].x, exercisesOnScreen[i].y);
+        }
+        }
+
+    function getRandomExercise(){
+        let a = Math.floor(Math.random() * 11);
+        return tableOfFour[a];
+    }
+
+    function spawnNewExercise() {
+        exercisesOnScreen.push(structuredClone(getRandomExercise()));   // make a clone of a random exercise
+        exercisesOnScreen[exercisesOnScreen.length-1].x = 10;
+        exercisesOnScreen[exercisesOnScreen.length-1].y = Math.floor(Math.random() * numberOfLinesOnScreen)*lineheight;
+        y_position = y_position + 20;
+    }
+
+
+
+    function updateGameArea() {
+        gameCanvas.clear();
+        if(timecounter == howFastSpawnANewExercise){
+            timecounter = 0;
+            spawnNewExercise();
+        }
+        timecounter = timecounter + 1;
+
+        let index;
+        for(let i = 0; i <= exercisesOnScreen.length-1; i++){   
+            exercisesOnScreen[i].x += speed;                // we move all the exercise to the right
+
+//            if(exercisesOnScreen[i].x > canvaswidth){       // if an exercise falls off the screen...
+//                healthScore = healthScore - 1;          // you lose a health point
+//                index = i;                              // and we'll remember the index of this exercise
+//            }
+        }
+
+ //       exercisesOnScreen.splice(index,1);      // we remove the offscreen exercise from the array
+
+        showExercise();
+
+    }
+
+        </script>
+</body>
